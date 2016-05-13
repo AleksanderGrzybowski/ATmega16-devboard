@@ -6,15 +6,29 @@
 
 #include "HD44780.h"
 
+// In fast PWM mode output can't go down to 0
+// max freq F_CPU/256
+void _fast_pwm() {
+    TCCR0 |= (1 << WGM00) | (1 << WGM01); // fast PWM mode
+}
+
+// In phase correct PWM output can be any value
+// but frequency is half the above
+void _phase_correct_pwm() {
+    TCCR0 &= ~(1 << WGM01);
+    TCCR0 |= (1 << WGM00);
+}
+
 void setup() {
     // LCD
     LCD_Initalize();
 
-    // PWM
+    // PWM using 8-bit Timer0
     DDRB |= (1 << PB3);
-    TCCR0 |= (1 << WGM00) | (1 << WGM01); // fast PWM mode
+    _phase_correct_pwm();
+    //_fast_pwm();  
     TCCR0 |= (1 << COM01); // override PB3 output, non-inverting mode
-    TCCR0 |= (1 << CS00); // no prescaler, frequency F_CPU/256
+    TCCR0 |= (1 << CS00); // no prescaler
     OCR0 = 0; // turned off
 
     // ADC
@@ -25,6 +39,17 @@ void setup() {
     DDRA &= ~(1 << PA0);
     PORTA &= ~(1 << PA0);
     ADMUX &= ~(1 + 2 + 4 + 8 + 16); 
+
+    // Interrupts using 16-bit Timer1
+    // no prescaler
+    TCCR1B &= ~((1 << CS12) | (1 << CS11)); 
+    TCCR1B |= (1 << CS10);
+    TIMSK |= (1 << TOIE1); // enable overflow interrupt
+    sei(); // enable global interrupts
+}
+
+ISR(TIMER1_OVF_vect) {
+    // ran every 2^16 CPU cycles
 }
 
 uint16_t adc() {
@@ -36,12 +61,5 @@ uint16_t adc() {
 
 int main(void) {
     setup();
-
-    char display[16 + 1];
-    while (1) {
-        sprintf(display, "adc = %d", adc());
-        LCD_Clear();
-        LCD_WriteText(display);
-        _delay_ms(1000);
-    }
+    while(1);
 }
