@@ -20,19 +20,21 @@ void _phase_correct_pwm() {
     TCCR0 |= (1 << WGM00);
 }
 
-void setup() {
-    // LCD
-    LCD_Initalize();
-
-    // PWM using 8-bit Timer0
+// PWM using 8-bit Timer0
+void setup_pwm() {
     DDRB |= (1 << PB3);
     _phase_correct_pwm();
     //_fast_pwm();  
     TCCR0 |= (1 << COM01); // override PB3 output, non-inverting mode
     TCCR0 |= (1 << CS00); // no prescaler
     OCR0 = 0; // turned off
+}
 
-    // ADC
+void setup_lcd() {
+    LCD_Initalize();
+}
+
+void setup_adc() {
     ADCSRA |= (1 << ADEN); // turn on ADC
     ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // prescaler 128
     ADMUX |= (1 << REFS0) | (1 << REFS1); // Vref = 2.56 V
@@ -40,22 +42,33 @@ void setup() {
     DDRA &= ~(1 << PA0);
     PORTA &= ~(1 << PA0);
     ADMUX &= ~(1 + 2 + 4 + 8 + 16); 
+}
 
-    // Interrupts using 16-bit Timer1
+// Interrupts using 16-bit Timer1
+void setup_interrupt() {
     // no prescaler
     TCCR1B &= ~((1 << CS12) | (1 << CS11)); 
     TCCR1B |= (1 << CS10);
     TIMSK |= (1 << TOIE1); // enable overflow interrupt
     sei(); // enable global interrupts
+}
 
-    // serial 8N1
+// serial 8N1
+void setup_serial() {
 #define BAUD 9600
 #define BAUDRATE ((F_CPU)/(BAUD*16UL)-1) 
     UBRRH = BAUDRATE >> 8;
     UBRRL = BAUDRATE;
     UCSRB |= (1 << TXEN) | (1 << RXEN);
     UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1);
+}
 
+void setup() {
+    setup_lcd();
+    setup_pwm();
+    setup_adc();
+    setup_interrupt();
+    setup_serial();
 }
 
 void uart_send_byte(unsigned char data) {
@@ -76,7 +89,7 @@ void uart_send_string(unsigned char* data) {
 
 
 ISR(TIMER1_OVF_vect) {
-    // ran every 2^16 CPU cycles
+    // runs every 2^16 CPU cycles
 }
 
 uint16_t adc() {
@@ -98,12 +111,7 @@ float temp_read() {
 int main(void) {
     setup();
 
-    char buf[17];
-    int i = 0;
     while(1) {
-        sprintf(buf, "%d %2.2f",i++, temp_read());
-        LCD_Clear();
-        LCD_WriteText(buf);
-        _delay_ms(1000);
+
     }
 }
