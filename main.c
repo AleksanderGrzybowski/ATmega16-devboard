@@ -61,11 +61,17 @@ void uart_send_byte(unsigned char data) {
     UDR = data;
 }
 
+unsigned char uart_receive_byte(void) {
+    while(!((UCSRA) & (1 << RXC)));
+    return UDR;
+}
+
 void uart_send_string(unsigned char* data) {
     while (*data) {
         uart_send_byte(*data++);
     }
 }
+
 
 ISR(TIMER1_OVF_vect) {
     // ran every 2^16 CPU cycles
@@ -81,8 +87,10 @@ uint16_t adc() {
 int main(void) {
     setup();
 
+    char buf[2] = "a\0";
+    LCD_WriteText("wait");
     while(1) {
-        uart_send_string("Hello");
-        _delay_ms(1000);
+        sprintf(buf, "%c", uart_receive_byte());
+        LCD_WriteText(buf);
     }
 }
