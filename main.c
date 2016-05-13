@@ -46,6 +46,25 @@ void setup() {
     TCCR1B |= (1 << CS10);
     TIMSK |= (1 << TOIE1); // enable overflow interrupt
     sei(); // enable global interrupts
+
+    // serial 8N1
+#define BAUD 9600
+#define BAUDRATE ((F_CPU)/(BAUD*16UL)-1) 
+    UBRRH = BAUDRATE >> 8;
+    UBRRL = BAUDRATE;
+    UCSRB |= (1 << TXEN) | (1 << RXEN);
+    UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1);
+}
+
+void uart_send_byte(unsigned char data) {
+    while (!(UCSRA & (1 << UDRE)));
+    UDR = data;
+}
+
+void uart_send_string(unsigned char* data) {
+    while (*data) {
+        uart_send_byte(*data++);
+    }
 }
 
 ISR(TIMER1_OVF_vect) {
@@ -61,5 +80,9 @@ uint16_t adc() {
 
 int main(void) {
     setup();
-    while(1);
+
+    while(1) {
+        uart_send_string("Hello");
+        _delay_ms(1000);
+    }
 }
