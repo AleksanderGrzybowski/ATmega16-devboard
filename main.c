@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "HD44780.h"
+#include "ds18b20.h"
 
 // In fast PWM mode output can't go down to 0
 // max freq F_CPU/256
@@ -54,6 +55,7 @@ void setup() {
     UBRRL = BAUDRATE;
     UCSRB |= (1 << TXEN) | (1 << RXEN);
     UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1);
+
 }
 
 void uart_send_byte(unsigned char data) {
@@ -83,14 +85,25 @@ uint16_t adc() {
     return ADC;
 }
 
+float temp_read() {
+	unsigned char ds18b20_pad[9];
+
+	ds18b20_ConvertT();
+	_delay_ms(750);
+	ds18b20_Read(ds18b20_pad);
+
+	return ((ds18b20_pad[1] << 8) + ds18b20_pad[0]) / 16.0;
+}
 
 int main(void) {
     setup();
 
-    char buf[2] = "a\0";
-    LCD_WriteText("wait");
+    char buf[17];
+    int i = 0;
     while(1) {
-        sprintf(buf, "%c", uart_receive_byte());
+        sprintf(buf, "%d %2.2f",i++, temp_read());
+        LCD_Clear();
         LCD_WriteText(buf);
+        _delay_ms(1000);
     }
 }
