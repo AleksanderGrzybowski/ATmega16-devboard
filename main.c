@@ -4,11 +4,15 @@
 #include <avr/sleep.h>
 #include <stdbool.h>
 
-int main(void) {
-    DDRA = 0xff;
+#include "HD44780.h"
 
-    while (1) {
-        PORTA++;
-        _delay_ms(500);    
-    }
+void setup() {
+    LCD_Initalize();
+}
+
+
+int main(void) {
+    setup();
+    LCD_WriteText("Hello world");
+    while (1);
 }
