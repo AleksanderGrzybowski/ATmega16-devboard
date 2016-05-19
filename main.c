@@ -63,13 +63,21 @@ void setup_serial() {
     UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1);
 }
 
+void disable_jtag() {
+    MCUCSR |= (1 << JTD);
+    MCUCSR |= (1 << JTD);
+}
+
 void setup() {
     setup_lcd();
     setup_pwm();
     setup_adc();
     setup_interrupt();
     setup_serial();
+    disable_jtag();
 }
+
+
 
 void uart_send_byte(unsigned char data) {
     while (!(UCSRA & (1 << UDRE)));
